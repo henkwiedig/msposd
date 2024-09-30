@@ -3,16 +3,17 @@
 #include <stdio.h>
 #include "msp.h"
 
-const uint8_t channelFreqLabel[48] = {
+const uint8_t channelFreqLabel[FREQ_LABEL_SIZE] = {
     'B', 'A', 'N', 'D', '_', 'A', ' ', ' ', // A
     'B', 'A', 'N', 'D', '_', 'B', ' ', ' ', // B
     'B', 'A', 'N', 'D', '_', 'E', ' ', ' ', // E
     'F', 'A', 'T', 'S', 'H', 'A', 'R', 'K', // F
     'R', 'A', 'C', 'E', ' ', ' ', ' ', ' ', // R
     'R', 'A', 'C', 'E', '_', 'L', 'O', 'W', // L
+    'W', 'L', 'A', 'N', 'C', 'H', 'A', 'N', // WLAN
 };
 
-const uint8_t bandLetter[6] = {'A', 'B', 'E', 'F', 'R', 'L'};
+const uint8_t bandLetter[BAND_COUNT] = {'A', 'B', 'E', 'F', 'R', 'L', 'W'};
 
 uint16_t channelFreqTable[FREQ_TABLE_SIZE] = {
     5865, 5845, 5825, 5805, 5785, 5765, 5745, 5725, // A
@@ -20,7 +21,8 @@ uint16_t channelFreqTable[FREQ_TABLE_SIZE] = {
     5705, 5685, 5665, 5645, 5885, 5905, 5925, 5945, // E
     5740, 5760, 5780, 5800, 5820, 5840, 5860, 5880, // F
     5658, 5695, 5732, 5769, 5806, 5843, 5880, 5917, // R
-    5362, 5399, 5436, 5473, 5510, 5547, 5584, 5621  // LowRace
+    5362, 5399, 5436, 5473, 5510, 5547, 5584, 5621, // LowRace
+    5660, 5700, 5720, 5765, 5805, 5845, 5885, 5925  // WLAN CHANNEL: 132, 140, 144, 153, 161, 169, 177, 185
 };
 
 uint8_t saPowerLevelsLut[NUM_POWER_LEVELS] = { 20, 25, 30, 35, 45, 50, 55, 58 };
@@ -51,8 +53,8 @@ void wipeVtxTable(int serial_fd) {
     payload[4] = 0; // lowPowerDisarm 
     payload[5] = 0; // pitModeFreq LSB
     payload[6] = 0; // pitModeFreq MSB
-    payload[7] = 5; // newBand - Band Race
-    payload[8] = 1; // newChannel - Channel 1
+    payload[7] = 7; // newBand - WLAN Channel
+    payload[8] = 5; // newChannel - 161
     payload[9] = 0; // newFreq  LSB
     payload[10] = 0; // newFreq  MSB
     payload[11] = BAND_COUNT; // newBandCount  

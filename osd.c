@@ -10,6 +10,9 @@
 #include <time.h>
 #include <math.h>
 
+#include <sys/ioctl.h>
+#include <net/if.h>
+#include <linux/wireless.h>
 
 #include "osd/msp/msp.h"
 #include "osd/msp/msp_displayport.h"
@@ -202,6 +205,107 @@ uint64_t get_time_ms() // in milliseconds
 }
 
 
+// Function to convert frequency to human-readable format
+double get_frequency_value(struct iwreq *wrq) {
+    return (double) wrq->u.freq.m * pow(10, wrq->u.freq.e - 6);  // Convert to MHz
+}
+
+double get_frequency(const char *iface) {
+    int sock;
+    struct iwreq wrq;
+
+    // Open a socket for ioctl communication
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+        perror("socket");
+        return -1;
+    }
+
+    // Prepare the iwreq structure
+    memset(&wrq, 0, sizeof(struct iwreq));
+    strncpy(wrq.ifr_name, iface, IFNAMSIZ);  // Interface name
+
+    // Perform the ioctl to get frequency
+    if (ioctl(sock, SIOCGIWFREQ, &wrq) < 0) {
+        perror("ioctl");
+        close(sock);
+        return -1;
+    }
+
+    close(sock);
+
+    // Convert the frequency to a human-readable value (MHz)
+    double freq_mhz = get_frequency_value(&wrq);
+    return freq_mhz;
+}
+
+int set_frequency(const char *iface, double freq_mhz) {
+    int sock;
+    struct iwreq wrq;
+
+    // Open a socket for ioctl communication
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+        perror("socket");
+        return -1;
+    }
+
+    // Prepare the iwreq structure
+    memset(&wrq, 0, sizeof(struct iwreq));
+    strncpy(wrq.ifr_name, iface, IFNAMSIZ);  // Set interface name
+
+    // Convert the frequency to the format required by the ioctl
+    wrq.u.freq.m = (int)freq_mhz;       // Frequency in MHz (e.g., 5180 for 5.180 GHz)
+    wrq.u.freq.e = 6;                   // Exponent for MHz (6 = 10^6, representing MHz)
+    wrq.u.freq.i = 0;                   // Frequency flags (optional, can be 0)
+
+    // Perform the ioctl to set the frequency
+    if (ioctl(sock, SIOCSIWFREQ, &wrq) < 0) {
+        perror("ioctl");
+        close(sock);
+        return -1;
+    }
+
+    close(sock);
+    return 0;
+}
+
+int get_power_level(const char *iface) {
+    int sock;
+    struct iwreq wrq;
+
+    // Open a socket for ioctl communication
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    if (sock < 0) {
+        perror("socket");
+        return -1;
+    }
+
+    // Prepare the iwreq structure
+    memset(&wrq, 0, sizeof(struct iwreq));
+    strncpy(wrq.ifr_name, iface, IFNAMSIZ);  // Set interface name
+
+    // Perform the ioctl to get the power level
+    if (ioctl(sock, SIOCGIWTXPOW, &wrq) < 0) {
+        perror("ioctl");
+        close(sock);
+        return -1;
+    }
+
+    // Extract the power level in dBm
+    int power_dbm = wrq.u.txpower.value;
+
+    // Check if the power is expressed in dBm (wrq.u.txpower.flags & IW_TXPOW_DBM)
+    if (wrq.u.txpower.flags & IW_TXPOW_DBM) {
+        printf("Power level of %s: %d dBm\n", iface, power_dbm);
+    } else {
+        printf("Power level of %s is not in dBm, value: %d\n", iface, power_dbm);
+    }
+
+    close(sock);
+    return 0;
+}
+
 static void rx_msp_callback(msp_msg_t *msp_message)
 {
     // Process a received MSP message from FC and decide whether to send it to the PTY (DJI) or UDP port (MSP-OSD on Goggles)
@@ -305,7 +409,14 @@ GPS_update	UINT 8	a flag to indicate when a new GPS frame is received (the GPS f
         }
         case MSP_GET_VTX_CONFIG: {
 			mspVtxConfigStruct *in_mspVtxConfigStruct = msp_message->payload;
-			printf("mspVTX Band: %i, Channel: %i\n",in_mspVtxConfigStruct->band,in_mspVtxConfigStruct->channel);
+            uint16_t frequency = (in_mspVtxConfigStruct->freqMSB << 8) | in_mspVtxConfigStruct->freqLSB;
+            //get_power_level("wlan0");
+            double current_frequency = get_frequency("wlan0");
+			printf("mspVTX Band: %i, Channel: %i, wanted Frequency: %u, set Frequency: %.0f\n",in_mspVtxConfigStruct->band, in_mspVtxConfigStruct->channel, frequency, current_frequency);
+            if (frequency != (uint16_t)current_frequency) {
+                printf("mspVTX executing channel change\n");
+                set_frequency("wlan0", (double)frequency);
+            }
             break;
         }
         default: {
