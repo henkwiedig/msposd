@@ -30,7 +30,7 @@
 
 #define BAND_NAME_LENGTH                8
 #define POWER_LEVEL_LABEL_LENGTH        3
-#define NUM_POWER_LEVELS                5
+#define NUM_POWER_LEVELS                8 // betaflight has max 8 powerlevels, will remove 40 from the default wfb-ng list
 
 #define CHANNEL_COUNT                   8
 #define BAND_COUNT                      6

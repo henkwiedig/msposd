@@ -23,20 +23,47 @@ uint16_t channelFreqTable[FREQ_TABLE_SIZE] = {
     5362, 5399, 5436, 5473, 5510, 5547, 5584, 5621  // LowRace
 };
 
-//uint8_t saPowerLevelsLut[NUM_POWER_LEVELS] = {1, 2, 14, 20, 26};
-uint8_t saPowerLevelsLut[NUM_POWER_LEVELS] = { 20, 25, 30, 35, 40, 45, 50, 55, 58 };
+uint8_t saPowerLevelsLut[NUM_POWER_LEVELS] = { 20, 25, 30, 35, 45, 50, 55, 58 };
 
-uint8_t saPowerLevelsLabel[NUM_POWER_LEVELS * POWER_LEVEL_LABEL_LENGTH] = { '0', ' ', ' ',
-                                                                            'R', 'C', 'E',
+uint8_t saPowerLevelsLabel[NUM_POWER_LEVELS * POWER_LEVEL_LABEL_LENGTH] = { '2', '0', ' ',
                                                                             '2', '5', ' ',
-                                                                            '1', '0', '0',
-                                                                            '4', '0', '0'};
+                                                                            '3', '0', ' ',
+                                                                            '3', '5', ' ',
+                                                                            '4', '5', ' ',
+                                                                            '5', '0', ' ',
+                                                                            '5', '5', ' ',
+                                                                            '5', '8', ' '};
 
 
 uint16_t msp_data_from_msg(uint8_t message_buffer[], msp_msg_t *msg) {
     // return size
     construct_msp_command(message_buffer, msg->cmd, msg->payload, msg->size, msg->direction);
     return msg->size + 6;
+}
+
+void wipeVtxTable(int serial_fd) {
+
+    uint8_t payload[15];
+    payload[0] = 0; // idx LSB
+    payload[1] = 0;  // idx MSB
+    payload[2] = 7; // 55, default wfb-ng
+    payload[3] = 0; // pitmode
+    payload[4] = 0; // lowPowerDisarm 
+    payload[5] = 0; // pitModeFreq LSB
+    payload[6] = 0; // pitModeFreq MSB
+    payload[7] = 5; // newBand - Band Race
+    payload[8] = 1; // newChannel - Channel 1
+    payload[9] = 0; // newFreq  LSB
+    payload[10] = 0; // newFreq  MSB
+    payload[11] = BAND_COUNT; // newBandCount  
+    payload[12] = CHANNEL_COUNT; // newChannelCount 
+    payload[13] = NUM_POWER_LEVELS; // newPowerCount 
+    payload[14] = 1; // vtxtable should be cleared 
+
+    uint8_t buffer[256];
+
+    construct_msp_command(buffer, MSP_SET_VTX_CONFIG, payload, sizeof(payload), MSP_OUTBOUND);
+    write(serial_fd, &buffer, sizeof(buffer));
 }
 
 void setVtxTableBand(int serial_fd, uint8_t band) {
@@ -92,40 +119,14 @@ void setVtxTablePowerLevel(int serial_fd, uint8_t idx) {
 
 void msp_set_vtx_config(int serial_fd) {
 
-    uint8_t payload[15];
-    payload[0] = 0; // idx LSB
-    payload[1] = 0;  // idx MSB
-    payload[2] = 3; // 25mW Power idx
-    payload[3] = 0; // pitmode
-    payload[4] = 0; // lowPowerDisarm 
-    payload[5] = 0; // pitModeFreq LSB
-    payload[6] = 0; // pitModeFreq MSB
-    payload[7] = 5; // newBand - Band Race
-    payload[8] = 1; // newChannel - Channel 1
-    payload[9] = 0; // newFreq  LSB
-    payload[10] = 0; // newFreq  MSB
-    payload[11] = BAND_COUNT; // newBandCount  
-    payload[12] = CHANNEL_COUNT; // newChannelCount 
-    payload[13] = 5; // newPowerCount 
-    payload[14] = 1; // vtxtable should be cleared 
+    wipeVtxTable(serial_fd);
 
-    uint8_t buffer[256];
-
-    construct_msp_command(buffer, MSP_SET_VTX_CONFIG, payload, sizeof(payload), MSP_OUTBOUND);
-    write(serial_fd, &buffer, sizeof(buffer));
-
-    setVtxTableBand(serial_fd,1);
-    setVtxTableBand(serial_fd,2);
-    setVtxTableBand(serial_fd,3);
-    setVtxTableBand(serial_fd,4);
-    setVtxTableBand(serial_fd,5);
-    setVtxTableBand(serial_fd,6);
-    setVtxTablePowerLevel(serial_fd,1);
-    setVtxTablePowerLevel(serial_fd,2);
-    setVtxTablePowerLevel(serial_fd,3);
-    setVtxTablePowerLevel(serial_fd,4);
-    setVtxTablePowerLevel(serial_fd,5);
-
+    for (int i = 1 ; i <= BAND_COUNT; i++) {
+        setVtxTableBand(serial_fd,i);
+    }
+    for (int i = 1 ; i <= NUM_POWER_LEVELS; i++) {
+        setVtxTablePowerLevel(serial_fd,i);
+    }
 
 }
 
