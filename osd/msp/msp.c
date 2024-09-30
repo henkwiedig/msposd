@@ -226,9 +226,6 @@ msp_error_e msp_process_data(msp_state_t *msp_state, uint8_t dat)
                 msp_state->buf_ptr = 0;
                 msp_state->state = MSP_CHECKSUM;
             }
-//            if (msp_state->message.cmd == MSP_GET_VTX_CONFIG) {
-//                printf("Reading: MSP_GET_VTX_CONFIG MSP: %s\n", msp_state->message.payload);
-//            }            
             break;
         case MSP_CHECKSUM:
             if (msp_state->message.checksum == dat)
