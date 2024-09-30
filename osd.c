@@ -121,6 +121,29 @@ static int16_t last_distanceToHome=0;
 
 static int16_t last_RC_Channels[16];
 
+// https://github.com/betaflight/betaflight/blob/master/src/main/msp/msp.c#L1949
+typedef struct
+{
+    uint8_t vtxType;
+    uint8_t band;
+    uint8_t channel;
+    uint8_t power;
+    uint8_t pitmode;
+    // uint16_t freq; // This doesnt work and bytes are missing after memcpy.
+    uint8_t freqLSB;
+    uint8_t freqMSB;
+    uint8_t deviceIsReady;
+    uint8_t lowPowerDisarm;
+    // uint16_t pitModeFreq; // This doesnt work and bytes are missing after memcpy.
+    uint8_t pitModeFreqLSB;
+    uint8_t pitModeFreqMSB;
+    uint8_t vtxTableAvailable;
+    uint8_t bands;
+    uint8_t channels;
+    uint8_t powerLevels;
+} mspVtxConfigStruct;
+
+
 static void send_display_size(int serial_fd) {
     uint8_t buffer[8];
     uint8_t payload[2] = {MAX_DISPLAY_X, MAX_DISPLAY_Y};
@@ -278,6 +301,11 @@ GPS_update	UINT 8	a flag to indicate when a new GPS frame is received (the GPS f
                     }
                 }
             }
+            break;
+        }
+        case MSP_GET_VTX_CONFIG: {
+			mspVtxConfigStruct *in_mspVtxConfigStruct = msp_message->payload;
+			printf("mspVTX Band: %i, Channel: %i\n",in_mspVtxConfigStruct->band,in_mspVtxConfigStruct->channel);
             break;
         }
         default: {

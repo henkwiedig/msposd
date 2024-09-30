@@ -79,29 +79,6 @@ int minAggPckts=3;
 bool monitor_wfb=false;
 static int temp = false;
 
-// https://github.com/betaflight/betaflight/blob/master/src/main/msp/msp.c#L1949
-typedef struct
-{
-    uint8_t vtxType;
-    uint8_t band;
-    uint8_t channel;
-    uint8_t power;
-    uint8_t pitmode;
-    // uint16_t freq; // This doesnt work and bytes are missing after memcpy.
-    uint8_t freqLSB;
-    uint8_t freqMSB;
-    uint8_t deviceIsReady;
-    uint8_t lowPowerDisarm;
-    // uint16_t pitModeFreq; // This doesnt work and bytes are missing after memcpy.
-    uint8_t pitModeFreqLSB;
-    uint8_t pitModeFreqMSB;
-    uint8_t vtxTableAvailable;
-    uint8_t bands;
-    uint8_t channels;
-    uint8_t powerLevels;
-} mspVtxConfigStruct;
-
-
 static void print_usage()
 {
 	printf("Usage: msposd [OPTIONS]\n"
@@ -694,11 +671,6 @@ static void serial_read_cb(struct bufferevent *bev, void *arg)
 		if (ParseMSP){
 			for(int i=0;i<packet_len;i++)
 				msp_process_data(rx_msp_state, data[i]);
-
-			if (rx_msp_state->message.cmd == MSP_GET_VTX_CONFIG) {
-				mspVtxConfigStruct *in_mspVtxConfigStruct = rx_msp_state->message.payload;
-				printf("mspVTX Band: %i, Channel: %i\n",in_mspVtxConfigStruct->band,in_mspVtxConfigStruct->channel);
-			}
 			//continue;
 		}else{
 			if (!version_shown && ttl_packets%10==3)//If garbage only, give some feedback do diagnose
