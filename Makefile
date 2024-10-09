@@ -9,13 +9,13 @@ LDLIBS=-levent_core
 
 
 #SRCS := lib/schrift.c compat.c bitmap.c net.c region.c text.c main.c
-SRCS := compat.c msposd.c bmp/bitmap.c bmp/region.c bmp/lib/schrift.c bmp/text.c osd/net/network.c osd/msp/msp.c osd/msp/msp_displayport.c libpng/lodepng.c osd/net/interface.c
+SRCS := compat.c msposd.c bmp/bitmap.c bmp/region.c bmp/lib/schrift.c bmp/text.c osd/net/network.c osd/msp/msp.c osd/msp/msp_displayport.c libpng/lodepng.c osd/util/settings.c osd/util/interface.c
 #BUILD = $(CC) $(SRCS) -I $(SDK)/include -L $(DRV) $(LIB) -Os -s -o $(or $(TARGET),$@)
 
 #BUILD = $(CC) $(SRCS) -I $(SDK)/include -L $(DRV) $(LIB) $(CFLAGS) $(LDFLAGS) $(LDLIBS) -o $(or $(TARGET),$@)
 #BUILD = $(CC) $(SRCS) -I $(SDK)/include -L $(DRV) $(LIB) $(CFLAGS) $(LDFLAGS) $(LDLIBS) -o $(or $(TARGET),$@)
 #BUILD = $(CC) $(SRCS) -I $(SDK)/include -L$(DRV) $(CFLAGS) $(LDFLAGS) $(LIB) $(LDLIBS) -o $(or $(TARGET),$@)
-BUILD = $(CC) $(SRCS) -I $(SDK)/include -I firmware/output/build/libnl-3.9.0/include -L ../firmware/output/per-package/libnl/target/usr/lib -L$(DRV) $(CFLAGS) $(LDFLAGS) $(LIB) $(LDLIBS) -o release/$(OUT)/msposd
+BUILD = $(CC) $(SRCS) -I $(SDK)/include  -L$(DRV) $(CFLAGS) $(LDFLAGS) $(LIB) $(LDLIBS) -o release/$(OUT)/msposd
 
 
 
@@ -26,27 +26,27 @@ clean:
 goke:
 	$(eval SDK = ./sdk/gk7205v300)
 	
-	$(eval LIB = -D__GOKE__ -ldl -ldnvqe -lgk_api -lhi_mpi -lsecurec -lupvqe -lvoice_engine -ldnvqe -lnl-3 -lnl-genl-3)
+	$(eval LIB = -D__GOKE__ -ldl -ldnvqe -lgk_api -lhi_mpi -lsecurec -lupvqe -lvoice_engine -ldnvqe)
 	$(eval TARGET = goke)
 	$(eval OUT = goke)
 	$(BUILD)
 
 hisi:
 	$(eval SDK = ./sdk/hi3516ev300)
-	$(eval LIB = -D__GOKE__ -ldnvqe -lmpi -lsecurec -lupvqe -lVoiceEngine -lnl-3 -lnl-genl-3)
+	$(eval LIB = -D__GOKE__ -ldnvqe -lmpi -lsecurec -lupvqe -lVoiceEngine)
 	$(eval TARGET = hisi)
 	$(eval OUT = hisi)
 	$(BUILD)
 
 star6b0:
 	$(eval SDK = ./sdk/infinity6)
-	$(eval LIB = -D__SIGMASTAR__ -D__INFINITY6__ -D__INFINITY6B0__ -lcam_os_wrapper -lm -lmi_rgn -lmi_sys -lnl-3 -lnl-genl-3)
+	$(eval LIB = -D__SIGMASTAR__ -D__INFINITY6__ -D__INFINITY6B0__ -lcam_os_wrapper -lm -lmi_rgn -lmi_sys)
 	$(eval TARGET = star6b0)
 	$(BUILD)
 
 star6e:
 	$(eval SDK = ./sdk/infinity6)
-	$(eval LIB = -D__SIGMASTAR__ -D__INFINITY6__ -D__INFINITY6E__ -lcam_os_wrapper -lm -lmi_rgn -lmi_sys -lmi_venc -lnl-3 -lnl-genl-3)
+	$(eval LIB = -D__SIGMASTAR__ -D__INFINITY6__ -D__INFINITY6E__ -lcam_os_wrapper -lm -lmi_rgn -lmi_sys -lmi_venc)
 	$(eval OUT = star6e)
 	$(BUILD)
 
