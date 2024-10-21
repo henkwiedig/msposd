@@ -54,7 +54,8 @@ int AHI_Enabled=1;
 
 const char *default_master = "/dev/ttyAMA0";
 const int default_baudrate = 115200;
-const char *defualt_out_addr = "127.0.0.1:14600";
+const char *defualt_out_addr = "127.0.0.1:14551";
+const char *defualt_mav_addr = "127.0.0.1:14550";
 const char *default_in_addr =  "127.0.0.1:0";
 const int RC_CHANNELS = 65; //RC_CHANNELS ( #65 ) for regular MAVLINK RC Channels read (https://mavlink.io/en/messages/common.html#RC_CHANNELS)
 const int RC_CHANNELS_RAW = 35; //RC_CHANNELS_RAW ( #35 ) for ExpressLRS,Crossfire and other RC procotols (https://mavlink.io/en/messages/common.html#RC_CHANNELS_RAW)
@@ -68,6 +69,10 @@ struct sockaddr_in sin_out = {
 	.sin_family = AF_INET,
 };
 int out_sock;
+struct sockaddr_in mav_sin_out = {
+	.sin_family = AF_INET,
+};
+int mav_sock;
 
 
 long aggregate=1;
@@ -89,7 +94,8 @@ static void print_usage()
 
  "	-m --master      Serial port to receive MSP (%s by default)\n"
  "	-b --baudrate    Serial port baudrate (%d by default)\n"
- "	-o --output	  	 UDP endpoint to forward aggregated MSP messages (%s)\n"
+ "	-o --out         UDP endpoint to forward aggregated MSP messages (%s)\n"
+ "	   --mavout      UDP endpoint to forward Mavlink messages (%s)\n"
  "	-c --channels    RC Channel to listen for commands (0 by default) and exec channels.sh. This command can be repeated. Channel values are 1-based.\n"
  "	-w --wait        Delay after each command received(2000ms default)\n"
  "	-r --fps         Max MSP Display refresh rate(5..50)\n"
@@ -105,7 +111,7 @@ static void print_usage()
 
 
 
-	       default_master, default_baudrate, defualt_out_addr);
+	       default_master, default_baudrate, defualt_out_addr, defualt_mav_addr);
 }
 
 static speed_t speed_by_value(int baudrate)
@@ -912,7 +918,7 @@ static void poll_msp(evutil_socket_t sock, short event, void *arg)
 
 
 static int handle_data(const char *port_name, int baudrate,
-		       const char *out_addr )
+		       const char *out_addr, const char *mav_addr )
 {
 	struct event_base *base = NULL;
 	struct event *sig_int = NULL, *in_ev = NULL, *temp_tmr = NULL, *msp_tmr=NULL;
@@ -954,12 +960,17 @@ static int handle_data(const char *port_name, int baudrate,
 		msp_set_vtx_config(serial_fd);
 	}
 	out_sock = socket(AF_INET, SOCK_DGRAM, 0);
+	mav_sock = socket(AF_INET, SOCK_DGRAM, 0);
+
 
  	if (!parse_host_port(out_addr,
 			     (struct in_addr *)&sin_out.sin_addr.s_addr,
 			     &sin_out.sin_port))
 		goto err;
-
+ 	if (!parse_host_port(mav_addr,
+			     (struct in_addr *)&mav_sin_out.sin_addr.s_addr,
+			     &mav_sin_out.sin_port))
+		goto err;
 
 	printf("Listening on %s...\n", port_name);
 
@@ -1033,7 +1044,8 @@ if (temp_tmr) {
 	}
 	if (out_sock>0)
 		close(out_sock);
- 
+  	if (mav_sock>0)
+		close(mav_sock);
 	if (serial_fd >= 0)
 		close(serial_fd);
 
@@ -1070,6 +1082,7 @@ int main(int argc, char **argv)
 		{ "master", required_argument, NULL, 'm' },
 		{ "baudrate", required_argument, NULL, 'b' },
 		{ "out", required_argument, NULL, 'o' },
+		{ "mavout", required_argument, NULL, '2' },
 		{ "ahi", required_argument, NULL, 'a' },		
 		{ "in", required_argument, NULL, 'i' },
 		{ "channels", required_argument, NULL, 'c' },
@@ -1090,6 +1103,7 @@ int main(int argc, char **argv)
 	const char *port_name = default_master;
 	int baudrate = default_baudrate;
 	const char *out_addr = defualt_out_addr;
+	const char *mav_addr = defualt_mav_addr;
 	const char *in_addr = default_in_addr;
 	MinTimeBetweenScreenRefresh=50;
 	last_board_temp=-100;
@@ -1109,6 +1123,9 @@ int main(int argc, char **argv)
 			break;
 		case 'o':
 			out_addr = optarg;
+			break;
+		case '2':
+			mav_addr = optarg;
 			break;
 		case 'i':
 			 
@@ -1217,5 +1234,5 @@ int main(int argc, char **argv)
 		//loadfonts    	          
 	}
 
-	return handle_data(port_name, baudrate, out_addr);
+	return handle_data(port_name, baudrate, out_addr, mav_addr);
 }

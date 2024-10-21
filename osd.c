@@ -13,6 +13,7 @@
 
 #include "osd/msp/msp.h"
 #include "osd/msp/msp_displayport.h"
+#include "mavlink/common/mavlink.h"
 
 #ifdef _x86
     #include <SFML/Graphics.h>
@@ -188,7 +189,9 @@ static int stat_attitudeDelay=0;
 extern bool AbortNow;
 extern bool verbose;
 extern struct sockaddr_in sin_out;//= {.sin_family = AF_INET,};
+extern struct sockaddr_in mav_sin_out;//= {.sin_family = AF_INET,};
 extern int out_sock;
+extern int mav_sock;
 extern int AHI_Enabled;
 extern void showchannels(int count);
 extern void ProcessChannels();
@@ -207,6 +210,31 @@ uint64_t get_time_ms() // in milliseconds
     return ts.tv_sec * 1000LL + ts.tv_nsec / 1000000;
 }
 
+void sendMavlinkStatusPacket(int status) {
+    // MAVLink message initialization
+    mavlink_message_t msg;
+    uint8_t system_id = 1;      // sys_id (set to 1)
+    uint8_t component_id = 1;  // comp_id (set to 1)
+    
+    // Create a heartbeat message
+    uint8_t mav_type = MAV_TYPE_GENERIC;           // MAV type: can be changed based on vehicle type
+    uint8_t autopilot_type = MAV_AUTOPILOT_GENERIC; // Type of autopilot
+    uint8_t base_mode = status;      // Base mode (with armed flag)
+    uint32_t custom_mode = 0;                      // Custom mode (optional, can be 0)
+    uint8_t system_status = MAV_STATE_ACTIVE;      // System status (active)
+    
+    // Pack the heartbeat message into the msg object
+    mavlink_msg_heartbeat_pack(system_id, component_id, &msg, 
+                               mav_type, autopilot_type, base_mode, custom_mode, system_status);
+
+    // MAVLink message needs to be serialized to a buffer before sending
+    uint8_t buf[MAVLINK_MAX_PACKET_LEN];
+    int len = mavlink_msg_to_send_buffer(buf, &msg); // Serialize the message into a buffer
+    
+    // Send the buffer over the network using sendto()
+    sendto(mav_sock, buf, len, 0, (struct sockaddr *)&mav_sin_out, sizeof(mav_sin_out));
+}
+
 
 static void rx_msp_callback(msp_msg_t *msp_message)
 {
@@ -216,7 +244,19 @@ static void rx_msp_callback(msp_msg_t *msp_message)
     switch(msp_message->cmd) {
 
         case MSP_CMD_STATUS: {
-            // we need the armed state
+            //only send amed state changes
+            if (armed != (msp_message->payload[6] & 0x01)) {
+                armed = (msp_message->payload[6] & 0x01);
+                if ( armed) {
+                    if (verbose) printf("Sending Armed state on mavlink tunnel\n");
+                    sendMavlinkStatusPacket(MAV_MODE_MANUAL_ARMED);
+                }
+                if ( ! armed ) {
+                    if (verbose) printf("Sending Disarmed state on mavlink tunnel\n");
+                    sendMavlinkStatusPacket(MAV_MODE_MANUAL_DISARMED);
+                }
+            }
+            //always use latest arm state internally
             armed = (msp_message->payload[6] & 0x01);
             if (armed) vtxMenuActive = false;
         }
