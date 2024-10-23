@@ -752,6 +752,7 @@ static void serial_event_cb(struct bufferevent *bev, short events, void *arg)
 
 // Callback function to handle keyboard input
 #ifdef __KEYBOARD_INPUT__
+int armed_toogle = true;
 void stdin_read_callback(int fd, short event, void *arg) {
     char buffer[256];
     ssize_t n = read(fd, buffer, sizeof(buffer) - 1);
@@ -759,6 +760,17 @@ void stdin_read_callback(int fd, short event, void *arg) {
     if (n > 0 && ! armed) {
         buffer[n] = '\0';  // Null-terminate the input
         printf("You typed: %s\n", buffer);
+		if (buffer[0] == 'e') {
+			if ( armed_toogle) {
+				printf("Sending Armed state on mavlink tunnel\n");
+				sendMavlinkStatusPacket(MAV_MODE_MANUAL_ARMED);
+			}
+			if ( ! armed_toogle ) {
+				printf("Sending Disarmed state on mavlink tunnel\n");
+				sendMavlinkStatusPacket(MAV_MODE_MANUAL_DISARMED);
+			}			
+			armed_toogle = !armed_toogle;
+		}
 		if (buffer[0] == 'm') {
 			printf("Disableing msposd\n");
   	    	vtxMenuEnabled = init_state_manager();
