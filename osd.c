@@ -15,7 +15,7 @@
 #include "osd/msp/msp.h"
 #include "osd/msp/msp_displayport.h"
 
-#ifdef _x86
+#if defined(_x86) || defined(__ROCKCHIP__)
     // #include <cairo/cairo.h>
     // #include <cairo/cairo-xlib.h>
     // #include <X11/Xlib.h>
@@ -23,7 +23,11 @@
     // #include <X11/Xatom.h>  
     // #include <stdio.h>
     // #include <stdbool.h>
+    #if defined(_x86)    
     #include "osd/util/Render_x86.c"
+    #elif defined(__ROCKCHIP__)
+    #include "osd/util/Render_Rockchip.c"
+    #endif
  #else
     #include "bmp/region.h"
     #include "bmp/common.h"    
@@ -670,7 +674,7 @@ int y_end = 500;
  }
 
  void LineDirect(uint8_t* bmpData, uint32_t width, uint32_t height, int x0, int y0, int x1, int y1, uint8_t color, int thickness) {
-#ifdef _x86
+#if defined(_x86) || defined(__ROCKCHIP__)
 
     drawLine_x86(x0,  y0,  x1,  y1,  getcolor(color),  thickness, false);
 #else
@@ -680,7 +684,7 @@ int y_end = 500;
  
 
 void LineTranspose(uint8_t* bmpData, int posX0, int posY0, int posX1, int posY1, uint8_t color, int thickness) {
-#ifdef _x86
+#if defined(_x86) || defined(__ROCKCHIP__)
     drawLine_x86(posX0,  posY0,  posX1,  posY1,  getcolor(color),  thickness, true);
 #else
     drawLine( bmpData, posX0,  posY0,  posX1,  posY1,  color,  thickness);
@@ -938,7 +942,7 @@ void LineTranspose(uint8_t* bmpData, int posX0, int posY0, int posX1, int posY1,
                     sprintf(buffer, "%+02d°", -last_pitch/10);
                 
                 int osd_font_size=18;
-#ifdef _x86
+#if defined(_x86) || defined(__ROCKCHIP__)
                  uint32_t color = getcolor(COLOR_YELLOW);
                  if ((-50 < last_pitch) && (last_pitch <50))
                     color = getcolor(COLOR_WHITE);
@@ -1011,7 +1015,7 @@ void LineTranspose(uint8_t* bmpData, int posX0, int posY0, int posX1, int posY1,
                             //needed since we may have already painted the icons                       
                         }
                     } 
-                    #ifdef _x86                            
+                    #if defined(_x86) || defined(__ROCKCHIP__)
                         Render_x86_rect(bmpBuff.pData,bmpBuff.u32Width, bmpBuff.u32Height,xR,yR,xR,yR,s_width,s_height);            
                     #endif                   
 
@@ -1465,7 +1469,7 @@ bool Convert2SmallGlyph(BITMAP *fnt ,  u_int16_t *s_left, u_int16_t *s_top, u_in
 //Not needed, but somehow parsing DrawString in InjectChars sometimes does not work.
 static bool ReplaceWidgets_Slow(int* x, int* y){
   
-#ifdef _x86    
+#if defined(_x86) || defined(__ROCKCHIP__)
     if (character_map[*x][*y]=='!' && character_map[*x+1][*y]=='R' && character_map[*x+2][*y]=='C' && character_map[*x+3][*y]=='!'){                                        
                     RCWidgetX = *x *current_display_info.font_width;
                     RCWidgetY = current_display_info.font_height * *y;
@@ -1638,7 +1642,7 @@ static void draw_screenBMP(){
         }
     
         step2=get_time_ms();  
-#ifndef _x86 
+#if !defined(_x86) && !defined(__ROCKCHIP__)
        
         if (AHI_Enabled==2)
             draw_AHI();
@@ -1657,7 +1661,7 @@ static void draw_screenBMP(){
     
     stat_screen_refresh_count++;
     uint64_t step3=get_time_ms();  
-#ifdef _x86
+#if defined(_x86) || defined(__ROCKCHIP__)
 
     if (bmp_x86==NULL)//lets cache it
         bmp_x86 = malloc(bmpBuff.u32Width * bmpBuff.u32Height * 4);  // Allocate memory for RGBA data    
@@ -1833,7 +1837,7 @@ unsigned char* loadPngToBMP(const char* filename, unsigned int* width, unsigned 
     else if (PIXEL_FORMAT_DEFAULT==PIXEL_FORMAT_8888){
        // memcpy(bmpData,pngData,bmpSize);
        convertRGBAToARGB( pngData, *width , *height, bmpData);
-#ifdef _x86       
+#if defined(_x86) || defined(__ROCKCHIP__)
        premultiplyAlpha((uint32_t*) bmpData, *width, *height);//RGBA format needs to be converted when using transparency?
 #endif       
     }else      
@@ -1955,7 +1959,7 @@ static void InitMSPHook(){
         PIXEL_FORMAT_DEFAULT=PIXEL_FORMAT_I4;//I4 format, 4 bits per pixel 
         PIXEL_FORMAT_BitsPerPixel = 4;
     #endif
-    #ifdef _x86
+    #if defined(_x86) || defined(__ROCKCHIP__)
         //enable this to test simulate preocessing on SigmaStar
         //PIXEL_FORMAT_DEFAULT=PIXEL_FORMAT_I4;//I4 format, 4 bits per pixel 
         //PIXEL_FORMAT_BitsPerPixel = 4;   
@@ -1966,10 +1970,11 @@ static void InitMSPHook(){
 
     int height = GetMajesticVideoConfig(&majestic_width);
     majestic_height=height;
-    #ifdef _x86
+    #if defined(_x86) || defined(__ROCKCHIP__)
         if (DrawOSD)
             Init_x86(&OVERLAY_WIDTH, &OVERLAY_HEIGHT);
         height=OVERLAY_HEIGHT;
+        printf("OSD is %ix%i pixels\n",OVERLAY_WIDTH,OVERLAY_HEIGHT);
     #endif
 
     //Get video resolution
@@ -2176,7 +2181,7 @@ On sigmastar the BMP row stride is aligned to 8 bytes, that is 16 pixels in PIXE
                         printf("Set Goke Font Review %d:%d\r\n", bitmap.u32Width, bitmap.u32Height);
 
                     set_bitmap(osds[FULL_OVERLAY_ID].hand, &bitmap);//bitmap must match region dimensions!
-                #elif _x86
+                #elif defined(_x86) || defined(__ROCKCHIP__)
                     //sfRenderWindow_clear(window, sfColor_fromRGB(255, 255, 0));
                     
                     unsigned char* rgbaData = malloc(bitmap.u32Width * bitmap.u32Height * 4);  // Allocate memory for RGBA data          
@@ -2232,7 +2237,7 @@ static void CloseMSP(){
     if (deinit)
         printf("[%s:%d]RGN_DeInit failed with %#x!\n", __func__, __LINE__, s32Ret);        
     #endif
-    #ifdef _x86
+    #if defined(_x86) || defined(__ROCKCHIP__)
     Close_x86();
     #endif
 

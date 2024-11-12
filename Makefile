@@ -19,7 +19,7 @@ version.h:
 all: version.h
 
 clean:
-	rm -f *.o msposd_x86 msposd_goke msposd_hisi msposd_star6b0 msposd_star6e
+	rm -f *.o msposd_x86 msposd_goke msposd_hisi msposd_star6b0 msposd_star6e msposd_rockchip
 
 goke: version.h
 	$(eval SDK = ./sdk/gk7205v300)
@@ -57,5 +57,12 @@ x86: version.h
 	$(eval CFLAGS += -D_x86)
 	$(eval LIB = -lcsfml-graphics -lcsfml-window -lcsfml-system `pkg-config --libs cairo x11` -lm)
 	 
+	$(eval BUILD = $(CC) $(SRCS) -I $(SDK)/include -L $(DRV) $(CFLAGS) $(LIB) -levent_core -O0 -g -o $(OUTPUT))
+	$(BUILD)
+
+rockchip: version.h
+	$(eval SDK = ./sdk/gk7205v300)
+	$(eval CFLAGS += -D__ROCKCHIP__)
+	$(eval LIB = `pkg-config --libs cairo x11` -lm -lrt)
 	$(eval BUILD = $(CC) $(SRCS) -I $(SDK)/include -L $(DRV) $(CFLAGS) $(LIB) -levent_core -O0 -g -o $(OUTPUT))
 	$(BUILD)
