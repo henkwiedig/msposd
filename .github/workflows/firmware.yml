@@ -7,7 +7,7 @@ on:
 
 jobs:
   buildroot:
-    if: github.repository == 'openipc/msposd'
+    #if: github.repository == 'openipc/msposd'
     name: Firmware
     runs-on: ubuntu-latest
     strategy:
@@ -36,4 +36,5 @@ jobs:
         run: |
           git clone https://github.com/openipc/firmware --depth=1
           cd firmware
+          echo make BOARD=${{matrix.platform}}_${{matrix.release}} MSPOSD_VERSION=${MSPOSD_VERSION} br-msposd
           make BOARD=${{matrix.platform}}_${{matrix.release}} MSPOSD_VERSION=${MSPOSD_VERSION} br-msposd
