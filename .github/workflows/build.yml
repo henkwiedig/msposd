@@ -52,10 +52,12 @@ jobs:
             msposd_jetson
 
       - name: Upload latest
-        if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+        if: github.ref == 'refs/heads/add-jetson-action' && github.event_name == 'push'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: latest
+          body: "Latest main build"
+          make_latest: true
           files: |
             msposd_goke
             msposd_hisi
