@@ -46,7 +46,7 @@ jobs:
             --method DELETE \
             -H "Accept: application/vnd.github+json" \
             -H "X-GitHub-Api-Version: 2022-11-28" \
-            /repos/${{ github.repository }}/releases/latest
+            /repos/${{ github.repository }}/releases/tag/latest
 
       - name: Upload latest
         if: github.ref == 'refs/heads/add-jetson-action' && github.event_name == 'push'
