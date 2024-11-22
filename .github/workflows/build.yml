@@ -55,7 +55,7 @@ jobs:
       - name: Delete existing latest release
         if: github.ref == 'refs/heads/add-jetson-action' && github.event_name == 'push'
         run: |
-          curl -s -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
+          curl -s -X DELETE -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
           "https://api.github.com/repos/${{ github.repository }}/releases/tags/latest" || echo "No existing latest release"
 
       - name: Upload latest
