@@ -15,7 +15,7 @@ fi
 GCC=$PWD/toolchain/$CC/bin/arm-linux-gcc
 OUT=msposd_$1
 
-if [[ "$1" != *"jetson"* && "$1" != *"x86"* ]]; then
+if [[ "$1" != *"jetson"* && "$1" != *"x86"* && "$1" != *"rockhip"* ]]; then
 	if [ ! -e toolchain/$CC ]; then
 		wget -c -q --show-progress $DL.$CC.tgz -P $PWD
 		mkdir -p toolchain/$CC
@@ -23,7 +23,6 @@ if [[ "$1" != *"jetson"* && "$1" != *"x86"* ]]; then
 		rm -f $CC.tgz
 	fi
 fi
-
 
 if [ ! -e firmware ]; then
 	git clone https://github.com/openipc/firmware --depth=1
@@ -47,7 +46,9 @@ elif [ "$1" = "jetson" ]; then
 elif [ "$1" = "x86" ]; then
 	DRV=$PWD
 	make DRV=$DRV OUTPUT=$OUT $1
+elif [ "$1" = "rockchip" ]; then
+    ./build_rockchip.sh $1
 else
-	echo "Usage: $0 [goke|hisi|star6b0|star6e|jetson|x86]"
+	echo "Usage: $0 [goke|hisi|star6b0|star6e|jetson|x86|rockchip]"
 	exit 1
 fi

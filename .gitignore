@@ -6,9 +6,12 @@ majestic.yaml
 /msposd
 firmware/
 release/
+aarch64/
+disk.raw
 msposd_goke
 msposd_hisi
 msposd_star6b0
 msposd_star6e
 msposd_x86
+msposd_rockchip
 serial_monitor.c
