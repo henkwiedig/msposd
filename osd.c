@@ -156,6 +156,7 @@ typedef struct
 
 
 extern bool vtxMenuActive;
+extern bool vrxMenuActive;
 extern bool vtxMenuEnabled;
 extern bool armed;
 extern bool vtxInitDone;
@@ -444,7 +445,10 @@ static void rx_msp_callback(msp_msg_t *msp_message)
         case MSP_CMD_STATUS: {
             // we need the armed state
             armed = (msp_message->payload[6] & 0x01);
-            if (armed) vtxMenuActive = false;
+            if (armed) {
+                vtxMenuActive = false;
+                vrxMenuActive = false;
+            }
             break;
         }
 
@@ -478,7 +482,9 @@ GPS_update	UINT 8	a flag to indicate when a new GPS frame is received (the GPS f
 
 	            //showchannels(18);		
             	ProcessChannels();
-                if (vtxMenuEnabled && vtxMenuActive) {
+                if (!armed)
+                    handle_stickcommands(channels);                
+                if (vtxMenuEnabled && (vtxMenuActive || vrxMenuActive)) {
                     print_current_state(display_driver);
                 }                
               break;
@@ -494,7 +500,7 @@ GPS_update	UINT 8	a flag to indicate when a new GPS frame is received (the GPS f
 
 
             
-            if ( ! vtxMenuActive ) {               
+            if ( ! vtxMenuActive && ! vrxMenuActive) {               
                 displayport_process_message(display_driver, msp_message); 
                     
             } else 

@@ -18,6 +18,7 @@ bool showStatusScreen = false;
 uint64_t lastStatusScreen = 0;
 extern bool verbose;
 extern bool vtxMenuActive;
+extern bool vrxMenuActive;
 extern int  out_sock;//to resend
 extern struct sockaddr_in sin_out;
 
@@ -29,6 +30,7 @@ static uint8_t payload_buffer[256];
 
 void exitVTXMenu(){
     vtxMenuActive = false;
+    vrxMenuActive = false;
 }
 
 void clear_vtx_menu() {

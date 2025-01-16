@@ -41,6 +41,7 @@
 #define UART_FCR_TRIGGER_RX_L3 0x10000	
 
 bool vtxMenuActive = false;
+bool vrxMenuActive = false;
 bool armed = true; // assume armed until we are told otherwise from the fc
 bool AbortNow=false;
 bool verbose = false;
@@ -560,9 +561,6 @@ void ProcessChannel(int rc_channel_no){
 	uint16_t val=0;
 	if (rc_channel_no<0 || rc_channel_no>15  /* || (mavpckts_ttl<100*/ ) //wait in the beginning for the values to settle
 		return;
-
-	if (!armed)
-		handle_stickcommands(channels);
 
 	if ( abs(get_current_time_ms()-LastStart[rc_channel_no]) < wait_after_bash)		
 		return;

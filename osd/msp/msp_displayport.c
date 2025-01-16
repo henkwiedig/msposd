@@ -16,6 +16,8 @@ MenuSection *current_section;
 int current_section_index = 0;
 int selected_option = 0;
 
+extern int in_sock;
+extern int out_sock;
 extern bool verbose;
 extern bool vtxMenuEnabled;
 
@@ -106,26 +108,51 @@ static int current_selection = 0;
 extern uint64_t lastStatusScreen;
 
 // Default path To test on x86
-#ifndef CONFIG_PATH
+#ifndef CONFIG_PATH_PREFIX
     #ifdef _x86
-        #define CONFIG_PATH "./vtxmenu.ini"
+        #define CONFIG_PATH_PREFIX "./"
     #else
-        #define CONFIG_PATH "/etc/vtxmenu.ini"
+        #define CONFIG_PATH_PREFIX "/etc/"
     #endif
 #endif
 
-bool init_state_manager() {
+bool init_state_manager(bool gs_mode) {
 
-    if (parse_ini(CONFIG_PATH, &menu_system)) {
-        printf("Failed to load menu config /etc/vtxmenu.ini\n");
+    char* config_file;
+    const char* file_name;
+
+    // Determine the file name based on gs_mode
+    if (!gs_mode)
+        file_name = "vtxmenu.ini";
+    else
+        file_name = "vrxmenu.ini";
+
+    // Allocate memory for the concatenated path
+    size_t path_len = strlen(CONFIG_PATH_PREFIX) + strlen(file_name) + 1;
+    config_file = (char*)malloc(path_len);
+    if (!config_file) {
+        fprintf(stderr, "Failed to allocate memory for config_file.\n");
         return false;
+    }
+
+    // Concatenate CONFIG_PATH_PREFIX and file_name
+    snprintf(config_file, path_len, "%s%s", CONFIG_PATH_PREFIX, file_name);
+
+    printf("Config path: %s\n", config_file);        
+
+    bool ret = false;
+    if (parse_ini(config_file, &menu_system)) {
+        printf("Failed to load menu config %s\n",config_file);
+        ret=false;
     } else {
         current_section = &menu_system.sections[current_section_index];
         if (verbose) 
             print_menu_system_state(&menu_system);
-        return true;
+        ret=true;
     }
     lastStatusScreen = get_current_time_ms();
+    free(config_file);            
+    return ret;
 }
 
 void print_current_state(displayport_vtable_t *display_driver) {
@@ -153,12 +180,14 @@ typedef enum {
     LEFT,
     ENTER,
     VTXMENU,
+    VRXMENU,
     SAFEBOOT,
     NONE
 } stickcommands;
 
 int last_command = NONE;
 extern bool vtxMenuActive;
+extern bool vrxMenuActive;
 extern bool showStatusScreen;
 
 
@@ -196,6 +225,8 @@ void handle_stickcommands(uint16_t channels[18]) {
     command=RIGHT;
   else if (IS_HI_yaw && IS_LO_throttle && IS_LO_roll && IS_LO_pitch)
     command=VTXMENU;
+  else if (IS_LO_yaw && IS_LO_throttle && IS_HI_roll && IS_LO_pitch)
+    command=VRXMENU;
   else if (IS_HI_yaw && IS_HI_throttle && IS_LO_roll && IS_HI_pitch)
     command=SAFEBOOT;
   else
@@ -203,14 +234,29 @@ void handle_stickcommands(uint16_t channels[18]) {
 
     if (command != last_command) {
 
-        if ( !vtxMenuActive) {
+        if ( !vtxMenuActive && ! vrxMenuActive) {
             switch (command) {
                 case VTXMENU:
-                    if (verbose) printf("Entering vtxMenu\n");
-                    newMenu = true;
-                    vtxMenuEnabled = init_state_manager();
-                    if (vtxMenuEnabled)
-                        vtxMenuActive = true;
+                    if (in_sock <= 0) { // we are on air side
+                        if (verbose) printf("Entering vtxMenu\n");
+                        newMenu = true;
+                        vtxMenuEnabled = init_state_manager(false);
+                        if (vtxMenuEnabled) {
+                            vtxMenuActive = true;
+                            vrxMenuActive = false;
+                        }
+                    }
+                    break;
+                case VRXMENU:
+                    if (in_sock > 0) { // we are on ground side
+                        if (verbose) printf("Entering vrxMenu\n");
+                        newMenu = true;
+                        vtxMenuEnabled = init_state_manager(true);
+                        if (vtxMenuEnabled) {
+                            vtxMenuActive = false;
+                            vrxMenuActive = true;
+                        }
+                    }
                     break;
                 case SAFEBOOT:
                     safeboot();
@@ -301,9 +347,10 @@ void handle_stickcommands(uint16_t channels[18]) {
                     //handle_selection();
                     break;           
                 case EXIT:
-                    if (verbose) printf("Exit vtxMenu\n");
+                    if (verbose) printf("Exit v[t|r]xMenu\n");
                     newMenu = true;
                     vtxMenuActive = false;
+                    vrxMenuActive = false;
                     clear_vtx_menu();
                     break;
             }
