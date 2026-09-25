@@ -2396,8 +2396,11 @@ static void draw_screenBMP2(bool OnlyAHI) {
 	if (cntr++ < 0) // skip in the beginning to show to font preview
 		return;
 
-	if (!DrawOSD && (get_time_ms() - LastDrawn) < 200) // No need to redraw text on screen
-													   // so often, lets keep low CPU load
+	// Without -d/-z nothing ever shows the bitmap (forward-only mode), so
+	// don't render it at all. Besides the wasted CPU, the rendering bursts
+	// alone were enough to tear frames on the Hi3516CV610 while waybeam runs
+	// VPSS->VENC in low-delay mode -- with no overlay region involved.
+	if (!DrawOSD)
 		return;
 
 #if defined(_x86) || defined(__ROCKCHIP__)
