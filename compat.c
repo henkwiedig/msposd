@@ -27,7 +27,7 @@ void backtrace(void) {}
 void backtrace_symbols(void) {}
 #endif
 
-#if !defined(_x86) && !defined(__ROCKCHIP__)
+#if !defined(_x86) && !defined(__ROCKCHIP__) && !defined(__HEADLESS__)
 int __fgetc_unlocked(FILE *stream) { return fgetc(stream); }
 
 size_t _stdlib_mb_cur_max(void) { return 0; }

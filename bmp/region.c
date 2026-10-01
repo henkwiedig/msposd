@@ -51,7 +51,7 @@ int InitRGN_SigmaStar(){
 
 int create_region(int *handle, int x, int y, int width, int height) {
 	int s32Ret = -1;
-#if !defined(_x86) && !defined(__ROCKCHIP__)
+#if !defined(_x86) && !defined(__ROCKCHIP__) && !defined(__HEADLESS__)
 #ifdef __SIGMASTAR__
 	MI_RGN_ChnPort_t stChn;
 
@@ -363,7 +363,7 @@ int prepare_bitmap(
 
 int set_bitmap(int handle, BITMAP *bitmap) {
 	int s32Ret = 0;
-#if !defined(_x86) && !defined(__ROCKCHIP__)
+#if !defined(_x86) && !defined(__ROCKCHIP__) && !defined(__HEADLESS__)
 #ifdef __SIGMASTAR__
 	s32Ret = MI_RGN_SetBitMap(DEV handle, (MI_RGN_Bitmap_t *)(bitmap));
 #elif __GOKE__

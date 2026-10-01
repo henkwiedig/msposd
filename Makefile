@@ -20,7 +20,7 @@ version.h:
 all: version.h
 
 clean:
-	rm -f *.o msposd msposd_goke msposd_hisi msposd_star6b0 msposd_star6e msposd_rockchip
+	rm -f *.o msposd msposd_headless msposd_goke msposd_hisi msposd_star6b0 msposd_star6e msposd_rockchip
 
 goke: version.h
 	$(eval SDK = ./sdk/gk7205v300)
@@ -56,6 +56,15 @@ star6e: version.h
 	$(eval SDK = ./sdk/infinity6)
 	$(eval CFLAGS += -D__SIGMASTAR__ -D__INFINITY6__ -D__INFINITY6E__)
 	$(eval LIB = -lcam_os_wrapper -lm -lmi_rgn -lmi_sys)
+	$(BUILD)
+
+# Forward-only build for any Linux: no vendor SDK and no region API, so no
+# on-screen drawing (-d/-z are refused). It reads MSP from the flight
+# controller and forwards it to the ground station (-o), where the OSD is
+# rendered. Cross-compile with CC=<toolchain gcc> TOOLCHAIN=<sysroot with libevent>.
+headless: version.h
+	$(eval CFLAGS += -D__HEADLESS__)
+	$(eval BUILD = $(CC) $(SRCS) -I$(PWD) $(if $(TOOLCHAIN),-I$(TOOLCHAIN)/usr/include -L$(TOOLCHAIN)/usr/lib) $(CFLAGS) -levent_core -lm -Os -s -o $(OUTPUT))
 	$(BUILD)
 
 native: version.h

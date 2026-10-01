@@ -917,12 +917,14 @@ static void rx_msp_callback(msp_msg_t *msp_message) {
 			printf("Flight Controller detected: %s\n", current_fc_identifier);
 			if (bitmapFnt.pData == NULL) {
 				SetOSDMsg("");
+#ifndef __HEADLESS__ // nothing to draw with, so no font to load
 				LoadFont();
 				if (bitmapFnt.pData == NULL && DrawOSD) {
 					char msg[200];
 					sprintf(msg, "&F38 &L43 No Font File %s found!", font_load_name);
 					SetOSDMsg(msg);
 				}
+#endif
 			}
 		}
 		break;
@@ -2603,6 +2605,8 @@ static void draw_screenBMP2(bool OnlyAHI) {
 		FlushDrawing();
 	}
 
+#elif defined(__HEADLESS__)
+	// No region to hand the bitmap to: the headless build never draws.
 #elif __GOKE__
 	if (DrawOSD)
 		set_bitmap(osds[FULL_OVERLAY_ID].hand, &bmpBuff);
@@ -2693,11 +2697,13 @@ static void draw_complete() {
 	memcpy(character_map_complete, character_map, sizeof(character_map));
 	draw_screenBMP();
 
+#ifndef __HEADLESS__ // a headless build never loads a font, by design
 	if (draws < 2 && bitmapFnt.pData == NULL) {
 		char msg[200];
 		sprintf(msg, "&F38 &L43 Identifying Flight Controller...", font_load_name);
 		SetOSDMsg(msg);
 	}
+#endif
 
 	if (recording_running) {
 		handle_osd_out();

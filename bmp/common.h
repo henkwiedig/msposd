@@ -39,6 +39,15 @@ extern "C" {
 #define PIXEL_FORMAT_8888 E_MI_RGN_PIXEL_FORMAT_ARGB8888
 #define PIXEL_FORMAT_I4 E_MI_RGN_PIXEL_FORMAT_I4
 
+#elif defined(__HEADLESS__)
+// No vendor region API: the headless build only forwards MSP and never
+// draws, so these just need to be distinct values.
+#define PIXEL_FORMAT_4444 0
+#define PIXEL_FORMAT_1555 1
+#define PIXEL_FORMAT_2BPP 2
+#define PIXEL_FORMAT_8888 3
+#define PIXEL_FORMAT_I4 4
+
 #elif defined(__INGENIC__)
 #include "imp_isp.h"
 #include "imp_osd.h"

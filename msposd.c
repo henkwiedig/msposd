@@ -1567,6 +1567,10 @@ int main(int argc, char **argv) {
 			break;
 
 		case 'd':
+#ifdef __HEADLESS__
+			fprintf(stderr, "-d: this is a headless build, it only forwards MSP (-o)\n");
+			return EXIT_FAILURE;
+#endif
 			DrawOSD = true;
 			printf("MSP to OSD mode!\n");
 			break;
@@ -1580,6 +1584,10 @@ int main(int argc, char **argv) {
 			break;
 
 		case 'z': {
+#ifdef __HEADLESS__
+			fprintf(stderr, "-z: this is a headless build, it only forwards MSP (-o)\n");
+			return EXIT_FAILURE;
+#endif
 			char buffer[16];
 			strncpy(buffer, optarg, sizeof(buffer));
 			char *limit = strchr(buffer, 'x');
