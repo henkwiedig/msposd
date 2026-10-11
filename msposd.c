@@ -698,6 +698,56 @@ void ProcessChannels() {
 	}
 }
 
+// FC arm state hook: runs /usr/bin/armed.sh <1|0|lost> in the background,
+// like channels.sh, if the script exists -- a board opts in by shipping it.
+// The state is the FC's own arm flag from MSP_STATUS (polled once a second),
+// not an RC switch: it stays right through prearm refusals, crash/failsafe
+// auto-disarms and RX loss (the FC is still armed in failsafe stage 1).
+// Reported when first known, on every change and every
+// ARMED_HOOK_REPEAT_MS while it keeps arriving, so a consumer that
+// restarted catches up; "lost" once when MSP_STATUS stops for
+// ARMED_HOOK_LOST_MS (the consumer decides what that means -- e.g. keep
+// the last state: after a crash the FC has usually reported disarmed
+// before it goes quiet).
+#define ARMED_HOOK "/usr/bin/armed.sh"
+#define ARMED_HOOK_REPEAT_MS 10000
+#define ARMED_HOOK_LOST_MS 5000
+static int armed_hook_state = -1; // last reported: -1 nothing yet, 0, 1, 2 lost
+static uint64_t armed_hook_last_status_ms = 0;
+static uint64_t armed_hook_last_run_ms = 0;
+
+static void run_armed_hook(const char *arg) {
+	if (access(ARMED_HOOK, X_OK) != 0)
+		return;
+	char buff[64];
+	snprintf(buff, sizeof(buff), ARMED_HOOK " %s &", arg);
+	system(buff);
+}
+
+// Every MSP_STATUS reply (osd.c).
+void ArmedStateUpdate(bool now_armed) {
+	uint64_t now = get_current_time_ms();
+	int state = now_armed ? 1 : 0;
+	armed_hook_last_status_ms = now;
+	if (state == armed_hook_state && now - armed_hook_last_run_ms < ARMED_HOOK_REPEAT_MS)
+		return;
+	if (state != armed_hook_state)
+		printf("FC %s\n", now_armed ? "armed" : "disarmed");
+	armed_hook_state = state;
+	armed_hook_last_run_ms = now;
+	run_armed_hook(now_armed ? "1" : "0");
+}
+
+// From the MSP poll, once a second.
+static void ArmedStateCheckLost(void) {
+	if (armed_hook_state < 0 || armed_hook_state == 2 ||
+		get_current_time_ms() - armed_hook_last_status_ms < ARMED_HOOK_LOST_MS)
+		return;
+	printf("FC stopped answering MSP_STATUS\n");
+	armed_hook_state = 2;
+	run_armed_hook("lost");
+}
+
 void showchannels(int count) {
 	if (verbose) {
 		printf("Channels :");
@@ -1179,6 +1229,7 @@ static void send_variant_request2(int serial_fd) {
 		// poll for FC_STATUS
 		construct_msp_command(buffer, MSP_CMD_STATUS, NULL, 0, MSP_OUTBOUND);
 		res = write(serial_fd, buffer, cmdlen);
+		ArmedStateCheckLost();
 	}
 
 	if (rc_channel_mon_enabled &&

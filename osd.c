@@ -246,6 +246,7 @@ extern int out_sock;
 extern int AHI_Enabled;
 extern void showchannels(int count);
 extern void ProcessChannels();
+extern void ArmedStateUpdate(bool now_armed);
 extern uint16_t channels[18];
 extern int matrix_size;
 extern int GetTempSigmaStar();
@@ -741,6 +742,7 @@ static void rx_msp_callback(msp_msg_t *msp_message) {
 		bool was_armed = armed;
 #endif
 		armed = (msp_message->payload[6] & 0x01);
+		ArmedStateUpdate(armed);
 #if defined(_x86) || defined(__ROCKCHIP__)
 		update_gs_home_capture(was_armed, armed);
 		if (DrawOSD && AGL_enabled)
