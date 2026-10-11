@@ -109,6 +109,7 @@ Therefor majestic needs to record to a flat directory layout.
 ##  Options.
 Forwarding of MSP packets via UDP.  
 Can monitor RC Channels values in FC and call the script `channels.sh` (located at /usr/bin or /usr/sbin).Will passing the channel number and its value to it as $1 and $2 parameters. This allows for controlling the camera via the Remote Control Transmitter.  
+Reports the FC's arm state to `/usr/bin/armed.sh` if that script exists: `armed.sh 1|0` when the first MSP_STATUS reply arrives, on every change and every 10 s after that, and `armed.sh lost` once when MSP_STATUS replies stop for 5 s. This is the FC's own arm flag, not an RC switch, so it stays right when the FC refuses to arm, when it disarms itself (crash detection, failsafe) and during RX loss (still armed in failsafe stage 1). Use it e.g. to drop the VTX to low power while disarmed.  
 AHI (Artificial Horizon Indicator) ladder - Graphical AHI , that is drawn over the standard OSD. 
 
 **Show custom mesage and diagnostics** on screen when text is written to file /tmp/MSPOSD.msg 
